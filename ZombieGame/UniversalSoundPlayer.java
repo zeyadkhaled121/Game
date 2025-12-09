@@ -6,24 +6,18 @@ import javax.sound.sampled.*;
 
 public class UniversalSoundPlayer {
 
-    // متغيرات خاصة بموسيقى الخلفية فقط
     private static Player bgmPlayer;
     private static Thread bgmThread;
     private static boolean loopRunning = false;
 
-    // ---------------------------------------
-    // ميثود STOP المطلوبة
-    // ---------------------------------------
+ 
     public static void stop() {
-        // هذه الدالة توقف الموسيقى المستمرة (الخلفية)
         stopLoop();
 
-       
+
     }
 
-    // ---------------------------------------
-    // تشغيل مؤثر صوتي (SFX) مرة واحدة
-    // ---------------------------------------
+    
     public static void play(String path) {
         try {
             if (path.toLowerCase().endsWith(".wav")) {
@@ -36,7 +30,6 @@ public class UniversalSoundPlayer {
         }
     }
 
-    // تشغيل ملف WAV (يتم إنشاء Clip جديد لكل صوت لضمان تداخل الطلقات)
     private static void playWav(String path) {
         new Thread(() -> {
             try {
@@ -44,7 +37,6 @@ public class UniversalSoundPlayer {
                 Clip clip = AudioSystem.getClip();
                 clip.open(audioStream);
                 clip.start();
-                // إضافة Listener لإغلاق الموارد وتنظيف الذاكرة بعد انتهاء الصوت
                 clip.addLineListener(event -> {
                     if (event.getType() == LineEvent.Type.STOP) {
                         clip.close();
@@ -56,7 +48,6 @@ public class UniversalSoundPlayer {
         }).start();
     }
 
-    // تشغيل ملف MP3 كمؤثر صوتي (ليس خلفية)
     private static void playMp3OneShot(String path) {
         new Thread(() -> {
             try {
@@ -70,11 +61,9 @@ public class UniversalSoundPlayer {
         }).start();
     }
 
-    // ---------------------------------------
-    // التحكم بموسيقى الخلفية (Loop)
-    // ---------------------------------------
+ 
     public static void loopMp3(String path) {
-        stopLoop(); // نوقف أي موسيقى خلفية سابقة أولاً
+        stopLoop(); 
 
         loopRunning = true;
         bgmThread = new Thread(() -> {
@@ -91,7 +80,6 @@ public class UniversalSoundPlayer {
         bgmThread.start();
     }
 
-    // إيقاف اللوب (موسيقى الخلفية)
     public static void stopLoop() {
         loopRunning = false;
         try {
