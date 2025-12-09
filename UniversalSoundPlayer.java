@@ -4,7 +4,6 @@ import java.io.*;
 
 public class UniversalSoundPlayer {
 
-    // تشغيل WAV
     public static void playWav(String path) {
         try {
             AudioInputStream audioInput = AudioSystem.getAudioInputStream(new File(path));
@@ -16,7 +15,6 @@ public class UniversalSoundPlayer {
         }
     }
 
-    // تشغيل MP3
     public static void playMp3(String path) {
         new Thread(() -> {
             try {
@@ -30,11 +28,10 @@ public class UniversalSoundPlayer {
         }).start();
     }
 
-    // دالة موحدة: تشوف نوع الملف وتشتغل
     public static void play(String path) {
-        if (path.toLowerCase().endsWith(".wav")) {   // ← هنا
+        if (path.toLowerCase().endsWith(".wav")) {  
             playWav(path);
-        } else if (path.toLowerCase().endsWith(".mp3")) {   // ← وهنا
+        } else if (path.toLowerCase().endsWith(".mp3")) {   
             playMp3(path);
         } else {
             System.out.println("Unsupported audio format: " + path);
