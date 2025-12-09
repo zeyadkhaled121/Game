@@ -11,10 +11,6 @@ import javax.media.opengl.glu.GLU;
 
 public class ZombieGameListener extends ZombieAnimListener {
 
-    // ====================================================
-    // 1. الكلاسات المساعدة
-    // ====================================================
-
     class Zombie {
         float x, y;
         int animationFrame = 0;
@@ -25,40 +21,36 @@ public class ZombieGameListener extends ZombieAnimListener {
         }
     }
 
-    // [التعديل 2]: تحديث كلاس Bullet
+
     class Bullet {
         float x, y;
         float dx, dy;
         boolean isActive = true;
-        int textureIndex; // متغير جديد لتخزين رقم صورة الطلقة المناسب
+        int textureIndex; 
 
         public Bullet(float x, float y, float angle) {
             this.x = x;
             this.y = y;
 
-            // حسابات الحركة (كما هي من الكود السابق المظبوط)
+          
             this.dx = -(float) (Math.sin(Math.toRadians(angle)) * 4);
             this.dy = (float) (Math.cos(Math.toRadians(angle)) * 4);
 
-            // تحديد الصورة المناسبة بناءً على الزاوية (نظامك: 0=فوق، 90=يسار، 180=تحت، 270=يمين)
+            
             int angInt = (int) angle;
             if (angInt == 0) {
-                textureIndex = BULLET_UP_INDEX;    // ARM4
+                textureIndex = BULLET_UP_INDEX;    
             } else if (angInt == 180) {
-                textureIndex = BULLET_DOWN_INDEX;  // ARM3
+                textureIndex = BULLET_DOWN_INDEX;  
             } else if (angInt == 90) {
-                textureIndex = BULLET_LEFT_INDEX;  // ARM1
+                textureIndex = BULLET_LEFT_INDEX;  
             } else if (angInt == 270) {
-                textureIndex = BULLET_RIGHT_INDEX; // ARM2
+                textureIndex = BULLET_RIGHT_INDEX; 
             } else {
-                textureIndex = BULLET_UP_INDEX; // Default
+                textureIndex = BULLET_UP_INDEX; 
             }
         }
     }
-
-    // ====================================================
-    // 2. المتغيرات الرئيسية
-    // ====================================================
 
     int maxWidth = 200;
     int maxHeight = 100;
@@ -67,7 +59,7 @@ public class ZombieGameListener extends ZombieAnimListener {
     float soldierY = maxHeight / 2;
     final int SOLDIER_SPEED = 3;
 
-    float soldierAngle = 0; // (0=فوق، 270=يمين، 180=تحت، 90=يسار)
+    float soldierAngle = 0;
 
     int soldierAnimIndex = 0;
     boolean isSoldierMoving = false;
@@ -79,16 +71,16 @@ public class ZombieGameListener extends ZombieAnimListener {
     float ZOMBIE_SPEED = 0.5f;
     boolean gameOver = false;
 
-    // [التعديل 1]: إضافة صور الطلقات الجديدة
+ 
     String textureNames[] = {
             "Zombie_Walk1.png", "Zombie_Walk2.png", "Zombie_Walk3.png", "Zombie_Walk4.png", "Zombie_Walk5.png",
-            "Zombie_Walk6.png", "Zombie_Walk7.png", "Zombie_Walk8.png", "Zombie_Walk9.png", "Zombie_Walk10.png", // 0-9
-            "Man1.png", "Man2.png", "Man3.png", "Man4.png", // 10-13
-            "BG.png", // 14
-            "ARM2.png", // 15 (شمال)
-            "ARM1.png", // 16 (يمين)
-            "ARM3.png", // 17 (تحت)
-            "ARM4.png"  // 18 (فوق)
+            "Zombie_Walk6.png", "Zombie_Walk7.png", "Zombie_Walk8.png", "Zombie_Walk9.png", "Zombie_Walk10.png", 
+            "Man1.png", "Man2.png", "Man3.png", "Man4.png", 
+            "BG.png", 
+            "ARM2.png",
+            "ARM1.png", 
+            "ARM3.png", 
+            "ARM4.png"  
     };
 
     TextureReader.Texture texture[] = new TextureReader.Texture[textureNames.length];
@@ -99,7 +91,7 @@ public class ZombieGameListener extends ZombieAnimListener {
     final int SOLDIER_FRAMES_COUNT = 4;
     final int BACKGROUND_INDEX = 14;
 
-    // تعريف مؤشرات الطلقات الجديدة
+    
     final int BULLET_LEFT_INDEX = 15;
     final int BULLET_RIGHT_INDEX = 16;
     final int BULLET_DOWN_INDEX = 17;
@@ -107,9 +99,7 @@ public class ZombieGameListener extends ZombieAnimListener {
 
     long lastFireTime = 0;
 
-    // ====================================================
-    // 3. دالة التهيئة (init)
-    // ====================================================
+    
     public void init(GLAutoDrawable gld) {
         GL gl = gld.getGL();
         gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -120,7 +110,7 @@ public class ZombieGameListener extends ZombieAnimListener {
 
         for(int i = 0; i < textureNames.length; i++){
             try {
-                // تأكد من وجود كل الصور الجديدة في فولدر الـ Assets
+                
                 texture[i] = TextureReader.readTexture(assetsFolderName + "//" + textureNames[i] , true);
                 gl.glBindTexture(GL.GL_TEXTURE_2D, textures[i]);
                 new GLU().gluBuild2DMipmaps(
@@ -139,22 +129,20 @@ public class ZombieGameListener extends ZombieAnimListener {
         }
     }
 
-    // ====================================================
-    // 4. دالة الرسم (display)
-    // ====================================================
+   
     public void display(GLAutoDrawable gld) {
         GL gl = gld.getGL();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT);
         gl.glLoadIdentity();
 
-        // رسم الخلفية
+       
         DrawSprite(gl, maxWidth/2, maxHeight/2, BACKGROUND_INDEX, 10, 0);
 
         if (!gameOver) {
             handleLogic();
         }
 
-        // رسم الجندي
+        
         int currentSoldierFrame = SOLDIER_START_INDEX;
         if (isSoldierMoving) {
             currentSoldierFrame = SOLDIER_START_INDEX + ((soldierAnimIndex / 3) % SOLDIER_FRAMES_COUNT);
@@ -162,16 +150,15 @@ public class ZombieGameListener extends ZombieAnimListener {
         }
         DrawSprite(gl, soldierX, soldierY, currentSoldierFrame, 1, soldierAngle);
 
-        // [التعديل 3]: تحديث رسم الطلقات
+       
         for (Bullet b : bullets) {
             if (b.isActive) {
-                // نستخدم b.textureIndex الذي حددناه عند الإنشاء
-                // ونضع الزاوية 0 لأن الصورة نفسها مجهزة بالاتجاه الصحيح
+            
                 DrawSprite(gl, b.x, b.y, b.textureIndex, 0.3f, 0);
             }
         }
 
-        // رسم الزومبي
+       
         for (Zombie z : zombies) {
             int currentFrame = ZOMBIE_START_INDEX + ((z.animationFrame / 5) % 10);
             double angleToSoldier = Math.toDegrees(Math.atan2(soldierY - z.y, soldierX - z.x));
@@ -180,13 +167,11 @@ public class ZombieGameListener extends ZombieAnimListener {
         }
     }
 
-    // ====================================================
-    // 5. منطق اللعبة (لم يتغير)
-    // ====================================================
+   
     private void handleLogic() {
         isSoldierMoving = false;
 
-        // (0=فوق، 270=يمين، 180=تحت، 90=يسار)
+       
         if (isKeyPressed(KeyEvent.VK_RIGHT) && soldierX < maxWidth - 5) {
             soldierX += SOLDIER_SPEED;
             soldierAngle = 270;
@@ -208,7 +193,7 @@ public class ZombieGameListener extends ZombieAnimListener {
             isSoldierMoving = true;
         }
 
-        // إطلاق النار
+       
         if (isKeyPressed(KeyEvent.VK_SPACE)) {
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastFireTime > 200) {
@@ -216,7 +201,7 @@ public class ZombieGameListener extends ZombieAnimListener {
                 float gunOffsetDistance = 8.0f;
                 float rad = (float) Math.toRadians(soldierAngle);
 
-                // الحسابات السليمة من الكود السابق
+               
                 float bulletStartX = soldierX - (float)Math.sin(rad) * gunOffsetDistance;
                 float bulletStartY = soldierY + (float)Math.cos(rad) * gunOffsetDistance;
 
@@ -225,7 +210,7 @@ public class ZombieGameListener extends ZombieAnimListener {
             }
         }
 
-        // تحديث الطلقات
+      
         for (int i = 0; i < bullets.size(); i++) {
             Bullet b = bullets.get(i);
             b.x += b.dx;
@@ -237,7 +222,7 @@ public class ZombieGameListener extends ZombieAnimListener {
             }
         }
 
-        // تحديث الزومبي
+      
         for (Zombie z : zombies) {
             float dx = soldierX - z.x;
             float dy = soldierY - z.y;
@@ -285,9 +270,6 @@ public class ZombieGameListener extends ZombieAnimListener {
         }
     }
 
-    // ====================================================
-    // 6. دالة الرسم (لم تتغير)
-    // ====================================================
     public void DrawSprite(GL gl, float x, float y, int index, float scale, float angle){
         gl.glEnable(GL.GL_BLEND);
         gl.glBindTexture(GL.GL_TEXTURE_2D, textures[index]);
@@ -320,4 +302,5 @@ public class ZombieGameListener extends ZombieAnimListener {
     @Override
     public void keyTyped(final KeyEvent event) {}
     public boolean isKeyPressed(final int keyCode) { return keyBits.get(keyCode); }
+
 }
