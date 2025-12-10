@@ -156,9 +156,10 @@ public class ZombieGameMenu extends JFrame implements GLEventListener, MouseList
         drawButton(gl, (int)(80 * scaleX), (int)(150 * scaleY), currentWidth - (int)(160 * scaleX), (int)(300 * scaleY), new Color(0f, 0f, 0f, 0.6f));
         drawText(currentWidth / 2 - (int)(150 * scaleX), (int)(100 * scaleY), "Instructions", Color.YELLOW, 40);
         drawText((int)(100 * scaleX), (int)(250 * scaleY), " Use Arrow Keys to Move", Color.WHITE, 24);
-        drawText((int)(100 * scaleX), (int)(300 * scaleY), " Press Space to Shoot", Color.WHITE, 24);
-        drawText((int)(100 * scaleX), (int)(350 * scaleY), "  Press P for Pause and Resume", Color.WHITE, 24);
-        drawText((int)(100 * scaleX), (int)(400 * scaleY), "  Survive the Zombie Waves!", Color.WHITE, 24);
+        drawText((int)(100 * scaleX), (int)(290 * scaleY), " Press Space to Shoot", Color.WHITE, 24);
+        drawText((int)(100 * scaleX), (int)(330 * scaleY), " Press P for Pause and Resume", Color.WHITE, 24);
+        drawText((int)(100 * scaleX), (int)(370 * scaleY), " Stay Stand Till the timer ends to Survive the Wave!", Color.WHITE, 24);
+        drawText((int)(100 * scaleX), (int)(410 * scaleY), " Survive the Zombie Waves!", Color.WHITE, 24);
         int backWidth = (int)(200 * scaleX); int backHeight = (int)(40 * scaleY); int backX = currentWidth / 2 - (backWidth / 2);
         drawButton(gl, backX, (int)(500 * scaleY), backWidth, backHeight, Color.DARK_GRAY);
         drawText(currentWidth / 2 - (int)(30 * scaleX), (int)(530 * scaleY), "BACK", Color.WHITE, 24);
