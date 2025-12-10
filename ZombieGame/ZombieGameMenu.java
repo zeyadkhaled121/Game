@@ -50,7 +50,7 @@ public class ZombieGameMenu extends JFrame implements GLEventListener, MouseList
         setVisible(true);
 
         try {
-            String iconPath = "Game Assets/logo.png";
+            String iconPath = "Game-main/Game Assets/logo.png";
             Image icon = Toolkit.getDefaultToolkit().getImage(iconPath);
             this.setIconImage(icon);
         } catch (Exception e) {
@@ -76,10 +76,10 @@ public class ZombieGameMenu extends JFrame implements GLEventListener, MouseList
         gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
         textRenderer = new TextRenderer(new Font("SansSerif", Font.BOLD, 24));
         try {
-            menuBackgroundTexture = TextureIO.newTexture(new File("Game Assets/background.png"), true);
-            levelSelectImage = TextureIO.newTexture(new File("Game Assets/levels.png"), true);
-            gameBackgroundTexture = TextureIO.newTexture(new File("Game Assets/wlcome.png"), true);
-            instructionsBackground = TextureIO.newTexture(new File("Game Assets/instr.png"), true);
+            menuBackgroundTexture = TextureIO.newTexture(new File("Game-main/Game Assets/background.png"), true);
+            levelSelectImage = TextureIO.newTexture(new File("Game-main/Game Assets/levels.png"), true);
+            gameBackgroundTexture = TextureIO.newTexture(new File("Game-main/Game Assets/wlcome.png"), true);
+            instructionsBackground = TextureIO.newTexture(new File("Game-main/Game Assets/instr.png"), true);
         } catch (Exception e) {
             System.err.println("Error loading textures: " + e.getMessage());
         }
@@ -178,7 +178,7 @@ public class ZombieGameMenu extends JFrame implements GLEventListener, MouseList
         drawText(textStartX + (int)(20 * scaleX), (int)(228 * scaleY), "Mostafa Mahmoud", Color.WHITE, 22);
         drawText(textStartX + (int)(20 * scaleX), (int)(256 * scaleY), "Zeyad Khaled", Color.WHITE, 22);
         drawText(textStartX + (int)(20 * scaleX), (int)(284 * scaleY), "Abdelfattah Mostafa", Color.WHITE, 22);
-         drawText(textStartX + (int)(20 * scaleX), (int)(312 * scaleY), "Abdelaziz Rabiee", Color.WHITE, 22);
+        drawText(textStartX + (int)(20 * scaleX), (int)(312 * scaleY), "Abdelaziz Rabiee", Color.WHITE, 22);
         drawText(textStartX, (int)(340 * scaleY), "- This Game developed for CS304 Project", Color.WHITE, 22);
         int backWidth = (int)(200 * scaleX); int backHeight = (int)(40 * scaleY); int backX = currentWidth / 2 - (backWidth / 2);
         drawButton(gl, backX, (int)(500 * scaleY), backWidth, backHeight, Color.DARK_GRAY);
@@ -277,5 +277,4 @@ public class ZombieGameMenu extends JFrame implements GLEventListener, MouseList
     public void mouseEntered(MouseEvent e) {}
     public void mouseExited(MouseEvent e) {}
 }
-
 
