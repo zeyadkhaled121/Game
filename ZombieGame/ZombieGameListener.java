@@ -426,24 +426,27 @@ public class ZombieGameListener extends ZombieAnimListener {
         textRenderer.draw("Time: " + displayTime + "s", centerX - 40, gld.getHeight() - 30);
 
         if (gameOver) {
-            textRenderer.setColor(Color.YELLOW);
+            textRenderer.setColor(Color.RED);
             textRenderer.draw("GAME OVER", centerX - 60, centerY + 50);
 
-            textRenderer.setColor(Color.WHITE);
+            textRenderer.setColor(Color.BLACK);
             textRenderer.draw("Player: " + playerName, centerX - 70, centerY + 10);
             textRenderer.draw("Final Score: " + score, centerX - 70, centerY - 20);
             textRenderer.draw("High Score: " + ScoreManager.getHighScore(), centerX - 70, centerY - 50);
-
+            textRenderer.setColor(Color.WHITE);
         } else if (gameWon) {
             textRenderer.setColor(Color.GREEN);
-            textRenderer.draw("SURVIVED!", centerX - 60, centerY + 50);
-            textRenderer.setColor(Color.WHITE);
+            textRenderer.draw("YOU SURVIVED!", centerX - 60, centerY + 50);
+            textRenderer.setColor(Color.BLACK);
             textRenderer.draw("Player: " + playerName, centerX - 70, centerY + 10);
             textRenderer.draw("Final Score: " + score, centerX - 70, centerY - 20);
             textRenderer.draw("High Score: " + ScoreManager.getHighScore(), centerX - 70, centerY - 50);
+            textRenderer.setColor(Color.WHITE);
         } else if (isPaused) {
             textRenderer.setColor(Color.ORANGE);
             textRenderer.draw("PAUSED", centerX - 40, centerY + 20);
+            textRenderer.setColor(Color.BLACK);
+            textRenderer.draw("Press P to Resume", centerX - 40, centerY - 10);
             textRenderer.setColor(Color.WHITE);
             textRenderer.draw("Score: " + score, 10, gld.getHeight() - 30);
         } else {
@@ -496,4 +499,5 @@ public class ZombieGameListener extends ZombieAnimListener {
         return keyBits.get(keyCode);
     }
 }
+
 
