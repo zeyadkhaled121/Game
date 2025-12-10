@@ -61,6 +61,9 @@ public class ZombieGameListener extends ZombieAnimListener {
     final long HIT_INVINCIBILITY_MS = 2000;
 
     long gameStartTime = 0;
+    
+    long pauseStartTime = 0;
+
     final int SURVIVAL_TIME_SECONDS = 30;
     boolean gameWon = false;
     boolean winSoundPlayed = false;
@@ -117,10 +120,10 @@ public class ZombieGameListener extends ZombieAnimListener {
     long lastStepTime = 0;
     final int STEP_INTERVAL = 200;
 
-    final String BACKGROUND_MP3 = "soundeffects/8bit-music-for-game-68698.mp3";
-    final String GAMEOVER_WAV = "soundeffects/mixkit-retro-arcade-game-over-470.wav";
-    final String GUNSHOT_MP3 = "soundeffects/mixkit-game-gun-shot-1662.mp3";
-    final String WIN_SOUND_MP3 = "soundeffects/level-up-47165.mp3";
+    final String BACKGROUND_MP3 = "Game-main/soundeffects/8bit-music-for-game-68698.mp3";
+    final String GAMEOVER_WAV = "Game-main/soundeffects/mixkit-retro-arcade-game-over-470.wav";
+    final String GUNSHOT_MP3 = "Game-main/soundeffects/mixkit-game-gun-shot-1662.mp3";
+    final String WIN_SOUND_MP3 = "Game-main/soundeffects/level-up-47165.mp3";
 
 
 
@@ -183,7 +186,7 @@ public class ZombieGameListener extends ZombieAnimListener {
         gl.glClear(GL.GL_COLOR_BUFFER_BIT);
         gl.glLoadIdentity();
 
-        // 1. Draw Background
+        
         gl.glEnable(GL.GL_BLEND);
         gl.glBindTexture(GL.GL_TEXTURE_2D, textures[BACKGROUND_INDEX]);
         gl.glPushMatrix();
@@ -200,7 +203,7 @@ public class ZombieGameListener extends ZombieAnimListener {
             handleLogic();
         }
 
-        // 2. Draw Sprites (Soldier, Bullets, Zombies)
+        
         int currentSoldierFrame = SOLDIER_START_INDEX;
         if (isSoldierMoving && !isPaused && !gameOver && !gameWon) {
             currentSoldierFrame = SOLDIER_START_INDEX + ((soldierAnimIndex / 3) % SOLDIER_FRAMES_COUNT);
@@ -235,7 +238,7 @@ public class ZombieGameListener extends ZombieAnimListener {
             drawGameOverOverlay(gl);
         }
 
-        // 4. Draw UI
+        
         drawScore(gld);
         drawHealth(gld);
     }
@@ -272,7 +275,7 @@ public class ZombieGameListener extends ZombieAnimListener {
             return;
         }
 
-        // --- Game Controls ---
+        
         isSoldierMoving = false;
         if (isKeyPressed(KeyEvent.VK_RIGHT) && soldierX < maxWidth - 5) {
             soldierX += SOLDIER_SPEED; soldierAngle = 270; isSoldierMoving = true;
@@ -418,7 +421,9 @@ public class ZombieGameListener extends ZombieAnimListener {
         } else if (gameWon) {
             displayTime = 0;
         } else {
-            int timeElapsed = (int)((System.currentTimeMillis() - gameStartTime) / 1000);
+            
+            long currentTime = isPaused ? pauseStartTime : System.currentTimeMillis();
+            int timeElapsed = (int)((currentTime - gameStartTime) / 1000);
             displayTime = Math.max(0, SURVIVAL_TIME_SECONDS - timeElapsed);
         }
 
@@ -478,8 +483,17 @@ public class ZombieGameListener extends ZombieAnimListener {
         if (keyCode == KeyEvent.VK_P) {
             if (!gameOver && !gameWon) {
                 isPaused = !isPaused;
-                if (isPaused) UniversalSoundPlayer.stopLoop();
-                else UniversalSoundPlayer.loopMp3(BACKGROUND_MP3);
+                if (isPaused) {
+                    UniversalSoundPlayer.stopLoop();
+                    
+                    pauseStartTime = System.currentTimeMillis();
+                }
+                else {
+                    UniversalSoundPlayer.loopMp3(BACKGROUND_MP3);
+                   
+                    long pauseDuration = System.currentTimeMillis() - pauseStartTime;
+                    gameStartTime += pauseDuration;
+                }
             }
         }
         if (keyCode < 256) keyBits.set(keyCode);
@@ -499,5 +513,3 @@ public class ZombieGameListener extends ZombieAnimListener {
         return keyBits.get(keyCode);
     }
 }
-
-
