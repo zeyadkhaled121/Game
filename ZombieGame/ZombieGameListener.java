@@ -1,12 +1,10 @@
 package ZombieGame;
 
-
 import ZombieGame.Texture.TextureReader;
 import com.sun.opengl.util.j2d.TextRenderer;
 
 import java.awt.Font;
 import java.awt.Color;
-
 import java.awt.event.*;
 import java.io.IOException;
 import javax.media.opengl.*;
@@ -20,8 +18,6 @@ public class ZombieGameListener extends ZombieAnimListener {
     class Zombie {
         float x, y;
         int animationFrame = 0;
-
-
         boolean isDead = false;
         long deathTime = 0;
 
@@ -56,9 +52,20 @@ public class ZombieGameListener extends ZombieAnimListener {
     int maxWidth = 200;
     int maxHeight = 100;
 
-    float soldierX = maxWidth / 2;
-    float soldierY = maxHeight / 2;
+    float soldierX = maxWidth / 2.0f;
+    float soldierY = maxHeight / 2.0f;
     final int SOLDIER_SPEED = 3;
+
+    int soldierHealth = 3;
+    long lastHitTime = 0;
+    final long HIT_INVINCIBILITY_MS = 2000;
+
+    long gameStartTime = 0;
+    final int SURVIVAL_TIME_SECONDS = 30;
+    boolean gameWon = false;
+    boolean winSoundPlayed = false;
+
+    int finalTimeRemaining = 0;
 
     float soldierAngle = 0;
     int soldierAnimIndex = 0;
@@ -84,7 +91,8 @@ public class ZombieGameListener extends ZombieAnimListener {
             "Man1.png", "Man2.png", "Man3.png", "Man4.png",
             "BG.png",
             "ARM1.png", "ARM2.png", "ARM3.png", "ARM4.png",
-            "Zombie Dead.png"
+            "Zombie Dead.png",
+            "h1.png", "h2.png", "h3.png"
     };
 
     TextureReader.Texture texture[] = new TextureReader.Texture[textureNames.length];
@@ -99,8 +107,11 @@ public class ZombieGameListener extends ZombieAnimListener {
     final int BULLET_LEFT_INDEX = 16;
     final int BULLET_DOWN_INDEX = 17;
     final int BULLET_UP_INDEX = 18;
-
     final int ZOMBIE_DEAD_INDEX = 19;
+
+    final int HEART_FULL_INDEX = 20;
+    final int HEART_TWO_INDEX = 21;
+    final int HEART_ONE_INDEX = 22;
 
     long lastFireTime = 0;
     long lastStepTime = 0;
@@ -109,6 +120,9 @@ public class ZombieGameListener extends ZombieAnimListener {
     final String BACKGROUND_MP3 = "src/soundeffects/8bit-music-for-game-68698.mp3";
     final String GAMEOVER_WAV = "src/soundeffects/mixkit-retro-arcade-game-over-470.wav";
     final String GUNSHOT_MP3 = "src/soundeffects/mixkit-game-gun-shot-1662.mp3";
+    final String WIN_SOUND_MP3 = "src/soundeffects/level-up-47165.mp3";
+
+
 
     public void setGameSettings(boolean isHard, String name) {
         this.playerName = name;
@@ -121,9 +135,18 @@ public class ZombieGameListener extends ZombieAnimListener {
         }
     }
 
-
+    @Override
     public void init(GLAutoDrawable gld) {
         UniversalSoundPlayer.loopMp3(BACKGROUND_MP3);
+
+        soldierHealth = 3;
+        gameOver = false;
+        gameWon = false;
+        gameOverSoundPlayed = false;
+        winSoundPlayed = false;
+        score = 0;
+        gameStartTime = System.currentTimeMillis();
+        finalTimeRemaining = SURVIVAL_TIME_SECONDS;
 
         GL gl = gld.getGL();
         gl.glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -154,166 +177,144 @@ public class ZombieGameListener extends ZombieAnimListener {
         }
     }
 
-
+    @Override
     public void display(GLAutoDrawable gld) {
         GL gl = gld.getGL();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT);
         gl.glLoadIdentity();
 
-
+        // 1. Draw Background
         gl.glEnable(GL.GL_BLEND);
         gl.glBindTexture(GL.GL_TEXTURE_2D, textures[BACKGROUND_INDEX]);
         gl.glPushMatrix();
         gl.glBegin(GL.GL_QUADS);
-        gl.glTexCoord2f(0.0f, 0.0f);
-        gl.glVertex3f(0.0f, 0.0f, 0.0f);
-        gl.glTexCoord2f(1.0f, 0.0f);
-        gl.glVertex3f(maxWidth, 0.0f, 0.0f);
-        gl.glTexCoord2f(1.0f, 1.0f);
-        gl.glVertex3f(maxWidth, maxHeight, 0.0f);
-        gl.glTexCoord2f(0.0f, 1.0f);
-        gl.glVertex3f(0.0f, maxHeight, 0.0f);
+        gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(0.0f, 0.0f, 0.0f);
+        gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(maxWidth, 0.0f, 0.0f);
+        gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(maxWidth, maxHeight, 0.0f);
+        gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(0.0f, maxHeight, 0.0f);
         gl.glEnd();
         gl.glPopMatrix();
         gl.glDisable(GL.GL_BLEND);
 
-        if (!gameOver && !isPaused) {
+        if (!gameOver && !isPaused && !gameWon) {
             handleLogic();
         }
 
-
+        // 2. Draw Sprites (Soldier, Bullets, Zombies)
         int currentSoldierFrame = SOLDIER_START_INDEX;
-        if (isSoldierMoving && !isPaused && !gameOver) {
+        if (isSoldierMoving && !isPaused && !gameOver && !gameWon) {
             currentSoldierFrame = SOLDIER_START_INDEX + ((soldierAnimIndex / 3) % SOLDIER_FRAMES_COUNT);
             soldierAnimIndex++;
         }
-        DrawSprite(gl, soldierX, soldierY, currentSoldierFrame, 1, soldierAngle);
 
+        if (System.currentTimeMillis() - lastHitTime < HIT_INVINCIBILITY_MS && !gameOver && !gameWon) {
+            gl.glColor3f(1.0f, 0.5f, 0.5f);
+        } else {
+            gl.glColor3f(1.0f, 1.0f, 1.0f);
+        }
+        DrawSprite(gl, soldierX, soldierY, currentSoldierFrame, 1, soldierAngle);
+        gl.glColor3f(1.0f, 1.0f, 1.0f);
 
         for (Bullet b : bullets) {
             if (b.isActive) DrawSprite(gl, b.x, b.y, b.textureIndex, 0.3f, 0);
         }
 
-
         for (Zombie z : zombies) {
             double angleToSoldier = Math.toDegrees(Math.atan2(soldierY - z.y, soldierX - z.x));
-
-
             if (z.isDead) {
-
                 DrawSprite(gl, z.x, z.y, ZOMBIE_DEAD_INDEX, 1, (float) angleToSoldier);
             } else {
-
                 int currentFrame = ZOMBIE_START_INDEX + ((z.animationFrame / 5) % 10);
                 DrawSprite(gl, z.x, z.y, currentFrame, 1, (float) angleToSoldier);
-                if (!gameOver && !isPaused) z.animationFrame++;
+                if (!gameOver && !isPaused && !gameWon) z.animationFrame++;
             }
         }
 
-
-        drawScore(gld);
-    }
-
-    private void drawScore(GLAutoDrawable gld) {
-        textRenderer.beginRendering(gld.getWidth(), gld.getHeight());
-        int centerX = gld.getWidth() / 2;
-        int centerY = gld.getHeight() / 2;
 
         if (gameOver) {
-            textRenderer.setColor(Color.WHITE);
-            textRenderer.draw("GAME OVER", centerX - 60, centerY + 50);
-            textRenderer.setColor(Color.YELLOW);
-            textRenderer.draw("Player: " + playerName, centerX - 70, centerY + 10);
-            textRenderer.draw("Final Score: " + score, centerX - 70, centerY - 20);
-            textRenderer.draw("High Score: " + ScoreManager.getHighScore(), centerX - 70, centerY - 50);
-            textRenderer.setColor(Color.RED);
-        } else if (isPaused) {
-            textRenderer.setColor(Color.ORANGE);
-            textRenderer.draw("PAUSED", centerX - 40, centerY + 20);
-            textRenderer.setColor(Color.BLACK);
-            textRenderer.draw("Press 'P' to Resume", centerX - 80, centerY - 20);
-            textRenderer.setColor(Color.WHITE);
-            textRenderer.draw("Score: " + score, 10, gld.getHeight() - 30);
-        } else {
-            textRenderer.setColor(Color.WHITE);
-            textRenderer.draw("Score: " + score, 10, gld.getHeight() - 30);
+            drawGameOverOverlay(gl);
         }
-        textRenderer.endRendering();
+
+        // 4. Draw UI
+        drawScore(gld);
+        drawHealth(gld);
     }
 
+    private void drawGameOverOverlay(GL gl) {
+        gl.glEnable(GL.GL_BLEND);
+        gl.glDisable(GL.GL_TEXTURE_2D);
+
+        gl.glColor4f(1.0f, 0.0f, 0.0f, 0.5f);
+
+        gl.glBegin(GL.GL_QUADS);
+        gl.glVertex3f(0, 0, 0);
+        gl.glVertex3f(maxWidth, 0, 0);
+        gl.glVertex3f(maxWidth, maxHeight, 0);
+        gl.glVertex3f(0, maxHeight, 0);
+        gl.glEnd();
+
+        gl.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        gl.glEnable(GL.GL_TEXTURE_2D);
+    }
 
     private void handleLogic() {
-        boolean wasMoving = isSoldierMoving;
+        int timeElapsed = (int)((System.currentTimeMillis() - gameStartTime) / 1000);
+        int currentTimeRemaining = SURVIVAL_TIME_SECONDS - timeElapsed;
+
+        if (currentTimeRemaining <= 0 && !gameWon) {
+            gameWon = true;
+            UniversalSoundPlayer.stopLoop();
+            if (!winSoundPlayed) {
+                UniversalSoundPlayer.play(WIN_SOUND_MP3);
+                winSoundPlayed = true;
+                ScoreManager.checkAndSaveScore(score);
+            }
+            return;
+        }
+
+        // --- Game Controls ---
         isSoldierMoving = false;
-
-
         if (isKeyPressed(KeyEvent.VK_RIGHT) && soldierX < maxWidth - 5) {
-            soldierX += SOLDIER_SPEED;
-            soldierAngle = 270;
-            isSoldierMoving = true;
+            soldierX += SOLDIER_SPEED; soldierAngle = 270; isSoldierMoving = true;
         }
         if (isKeyPressed(KeyEvent.VK_LEFT) && soldierX > 5) {
-            soldierX -= SOLDIER_SPEED;
-            soldierAngle = 90;
-            isSoldierMoving = true;
+            soldierX -= SOLDIER_SPEED; soldierAngle = 90; isSoldierMoving = true;
         }
         if (isKeyPressed(KeyEvent.VK_UP) && soldierY < maxHeight - 5) {
-            soldierY += SOLDIER_SPEED;
-            soldierAngle = 0;
-            isSoldierMoving = true;
+            soldierY += SOLDIER_SPEED; soldierAngle = 0; isSoldierMoving = true;
         }
         if (isKeyPressed(KeyEvent.VK_DOWN) && soldierY > 5) {
-            soldierY -= SOLDIER_SPEED;
-            soldierAngle = 180;
-            isSoldierMoving = true;
+            soldierY -= SOLDIER_SPEED; soldierAngle = 180; isSoldierMoving = true;
         }
-
-        if (isSoldierMoving) {
-            long now = System.currentTimeMillis();
-            if (now - lastStepTime > STEP_INTERVAL) {
-
-                lastStepTime = now;
-            }
-        }
-
 
         if (isKeyPressed(KeyEvent.VK_SPACE)) {
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastFireTime > 200) {
                 float gunOffsetDistance = 8.0f;
                 float rad = (float) Math.toRadians(soldierAngle);
-                float bulletStartX = soldierX - (float) Math.sin(rad) * gunOffsetDistance;
-                float bulletStartY = soldierY + (float) Math.cos(rad) * gunOffsetDistance;
-                bullets.add(new Bullet(bulletStartX, bulletStartY, soldierAngle));
+                bullets.add(new Bullet(soldierX - (float) Math.sin(rad) * gunOffsetDistance,
+                        soldierY + (float) Math.cos(rad) * gunOffsetDistance, soldierAngle));
                 UniversalSoundPlayer.play(GUNSHOT_MP3);
                 lastFireTime = currentTime;
             }
         }
 
-
         for (int i = 0; i < bullets.size(); i++) {
             Bullet b = bullets.get(i);
-            b.x += b.dx;
-            b.y += b.dy;
+            b.x += b.dx; b.y += b.dy;
             if (b.x < 0 || b.x > maxWidth || b.y < 0 || b.y > maxHeight) {
-                bullets.remove(i);
-                i--;
+                bullets.remove(i); i--;
             }
         }
 
-
+        long currentTime = System.currentTimeMillis();
         for (Zombie z : zombies) {
-
-
             if (z.isDead) {
-
-                if (System.currentTimeMillis() - z.deathTime > 500) {
-                    z.isDead = false;
-                    resetZombie(z);
+                if (currentTime - z.deathTime > 500) {
+                    z.isDead = false; resetZombie(z);
                 }
                 continue;
             }
-
 
             float dx = soldierX - z.x;
             float dy = soldierY - z.y;
@@ -324,23 +325,29 @@ public class ZombieGameListener extends ZombieAnimListener {
                 z.y += (dy / distance) * ZOMBIE_SPEED;
             }
 
-
             if (distance < 5.0) {
-                if (!gameOver) {
-                    gameOver = true;
-                    UniversalSoundPlayer.stopLoop();
-                    UniversalSoundPlayer.stop();
+                if (currentTime - lastHitTime > HIT_INVINCIBILITY_MS) {
+                    soldierHealth--;
+                    lastHitTime = currentTime;
+                    soldierX = maxWidth / 2.0f; soldierY = maxHeight / 2.0f;
 
-                    if (!gameOverSoundPlayed) {
-                        UniversalSoundPlayer.play(GAMEOVER_WAV);
-                        gameOverSoundPlayed = true;
-                        ScoreManager.checkAndSaveScore(score);
+                    if (soldierHealth <= 0) {
+                        if (!gameOver) {
+                            gameOver = true;
+
+                            finalTimeRemaining = Math.max(0, currentTimeRemaining);
+
+                            UniversalSoundPlayer.stopLoop();
+                            if (!gameOverSoundPlayed) {
+                                UniversalSoundPlayer.play(GAMEOVER_WAV);
+                                gameOverSoundPlayed = true;
+                                ScoreManager.checkAndSaveScore(score);
+                            }
+                        }
                     }
-                    System.out.println("GAME OVER! Final Score: " + score);
                 }
             }
         }
-
         checkCollisions();
     }
 
@@ -349,22 +356,11 @@ public class ZombieGameListener extends ZombieAnimListener {
         for (int i = 0; i < bullets.size(); i++) {
             Bullet b = bullets.get(i);
             if (!b.isActive) continue;
-
             for (Zombie z : zombies) {
-
                 if (z.isDead) continue;
-
-                double dist = Math.sqrt(Math.pow(b.x - z.x, 2) + Math.pow(b.y - z.y, 2));
-                if (dist < hitDistance) {
-                    b.isActive = false;
-                    bullets.remove(i);
-                    i--;
-                    score += 50;
-
-
-                    z.isDead = true;
-                    z.deathTime = System.currentTimeMillis();
-
+                if (Math.sqrt(Math.pow(b.x - z.x, 2) + Math.pow(b.y - z.y, 2)) < hitDistance) {
+                    b.isActive = false; bullets.remove(i); i--;
+                    score += 50; z.isDead = true; z.deathTime = System.currentTimeMillis();
                     break;
                 }
             }
@@ -374,22 +370,10 @@ public class ZombieGameListener extends ZombieAnimListener {
     private void resetZombie(Zombie z) {
         int side = (int) (Math.random() * 4);
         switch (side) {
-            case 0 -> {
-                z.x = (float) (Math.random() * maxWidth);
-                z.y = maxHeight + 10;
-            }
-            case 1 -> {
-                z.x = (float) (Math.random() * maxWidth);
-                z.y = -10;
-            }
-            case 2 -> {
-                z.x = maxWidth + 10;
-                z.y = (float) (Math.random() * maxHeight);
-            }
-            case 3 -> {
-                z.x = -10;
-                z.y = (float) (Math.random() * maxHeight);
-            }
+            case 0 -> { z.x = (float) (Math.random() * maxWidth); z.y = maxHeight + 10; }
+            case 1 -> { z.x = (float) (Math.random() * maxWidth); z.y = -10; }
+            case 2 -> { z.x = maxWidth + 10; z.y = (float) (Math.random() * maxHeight); }
+            case 3 -> { z.x = -10; z.y = (float) (Math.random() * maxHeight); }
         }
     }
 
@@ -402,18 +386,73 @@ public class ZombieGameListener extends ZombieAnimListener {
         gl.glScaled(adjustedScale, adjustedScale, 1);
         gl.glRotated(angle, 0, 0, 1);
         gl.glBegin(GL.GL_QUADS);
-        gl.glTexCoord2f(0.0f, 0.0f);
-        gl.glVertex3f(-1.0f, -1.0f, -1.0f);
-        gl.glTexCoord2f(1.0f, 0.0f);
-        gl.glVertex3f(1.0f, -1.0f, -1.0f);
-        gl.glTexCoord2f(1.0f, 1.0f);
-        gl.glVertex3f(1.0f, 1.0f, -1.0f);
-        gl.glTexCoord2f(0.0f, 1.0f);
-        gl.glVertex3f(-1.0f, 1.0f, -1.0f);
+        gl.glTexCoord2f(0.0f, 0.0f); gl.glVertex3f(-1.0f, -1.0f, -1.0f);
+        gl.glTexCoord2f(1.0f, 0.0f); gl.glVertex3f(1.0f, -1.0f, -1.0f);
+        gl.glTexCoord2f(1.0f, 1.0f); gl.glVertex3f(1.0f, 1.0f, -1.0f);
+        gl.glTexCoord2f(0.0f, 1.0f); gl.glVertex3f(-1.0f, 1.0f, -1.0f);
         gl.glEnd();
         gl.glPopMatrix();
         gl.glDisable(GL.GL_BLEND);
     }
+
+    private void drawHealth(GLAutoDrawable gld) {
+        GL gl = gld.getGL();
+        int heartTextureIndex;
+        switch (soldierHealth) {
+            case 3 -> heartTextureIndex = HEART_FULL_INDEX;
+            case 2 -> heartTextureIndex = HEART_TWO_INDEX;
+            case 1 -> heartTextureIndex = HEART_ONE_INDEX;
+            default -> { return; }
+        }
+        DrawSprite(gl, maxWidth - 15f, maxHeight - 10f, heartTextureIndex, 0.5f, 0);
+    }
+
+    private void drawScore(GLAutoDrawable gld) {
+        textRenderer.beginRendering(gld.getWidth(), gld.getHeight());
+        int centerX = gld.getWidth() / 2;
+        int centerY = gld.getHeight() / 2;
+
+        int displayTime;
+        if (gameOver) {
+            displayTime = finalTimeRemaining;
+        } else if (gameWon) {
+            displayTime = 0;
+        } else {
+            int timeElapsed = (int)((System.currentTimeMillis() - gameStartTime) / 1000);
+            displayTime = Math.max(0, SURVIVAL_TIME_SECONDS - timeElapsed);
+        }
+
+        textRenderer.setColor(Color.YELLOW);
+        textRenderer.draw("Time: " + displayTime + "s", centerX - 40, gld.getHeight() - 30);
+
+        if (gameOver) {
+            textRenderer.setColor(Color.YELLOW);
+            textRenderer.draw("GAME OVER", centerX - 60, centerY + 50);
+
+            textRenderer.setColor(Color.WHITE);
+            textRenderer.draw("Player: " + playerName, centerX - 70, centerY + 10);
+            textRenderer.draw("Final Score: " + score, centerX - 70, centerY - 20);
+            textRenderer.draw("High Score: " + ScoreManager.getHighScore(), centerX - 70, centerY - 50);
+
+        } else if (gameWon) {
+            textRenderer.setColor(Color.GREEN);
+            textRenderer.draw("SURVIVED!", centerX - 60, centerY + 50);
+            textRenderer.setColor(Color.WHITE);
+            textRenderer.draw("Player: " + playerName, centerX - 70, centerY + 10);
+            textRenderer.draw("Final Score: " + score, centerX - 70, centerY - 20);
+            textRenderer.draw("High Score: " + ScoreManager.getHighScore(), centerX - 70, centerY - 50);
+        } else if (isPaused) {
+            textRenderer.setColor(Color.ORANGE);
+            textRenderer.draw("PAUSED", centerX - 40, centerY + 20);
+            textRenderer.setColor(Color.WHITE);
+            textRenderer.draw("Score: " + score, 10, gld.getHeight() - 30);
+        } else {
+            textRenderer.setColor(Color.WHITE);
+            textRenderer.draw("Score: " + score, 10, gld.getHeight() - 30);
+        }
+        textRenderer.endRendering();
+    }
+
 
     @Override
     public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
@@ -426,40 +465,34 @@ public class ZombieGameListener extends ZombieAnimListener {
         gl.glLoadIdentity();
     }
 
-    public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) {
-    }
+    public void displayChanged(GLAutoDrawable drawable, boolean modeChanged, boolean deviceChanged) {}
 
     public BitSet keyBits = new BitSet(256);
 
     @Override
     public void keyPressed(final KeyEvent event) {
         int keyCode = event.getKeyCode();
-
         if (keyCode == KeyEvent.VK_P) {
-            if (!gameOver) {
+            if (!gameOver && !gameWon) {
                 isPaused = !isPaused;
-
-                if (isPaused) {
-                    UniversalSoundPlayer.stopLoop();
-                } else {
-                    UniversalSoundPlayer.loopMp3(BACKGROUND_MP3);
-                }
+                if (isPaused) UniversalSoundPlayer.stopLoop();
+                else UniversalSoundPlayer.loopMp3(BACKGROUND_MP3);
             }
         }
-
-        keyBits.set(keyCode);
+        if (keyCode < 256) keyBits.set(keyCode);
     }
 
     @Override
     public void keyReleased(final KeyEvent event) {
-        keyBits.clear(event.getKeyCode());
+        int keyCode = event.getKeyCode();
+        if (keyCode < 256) keyBits.clear(keyCode);
     }
 
     @Override
-    public void keyTyped(final KeyEvent event) {
-    }
+    public void keyTyped(final KeyEvent event) {}
 
     public boolean isKeyPressed(final int keyCode) {
+        if (keyCode >= 256) return false;
         return keyBits.get(keyCode);
     }
 }
