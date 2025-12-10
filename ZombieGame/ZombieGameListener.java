@@ -117,10 +117,10 @@ public class ZombieGameListener extends ZombieAnimListener {
     long lastStepTime = 0;
     final int STEP_INTERVAL = 200;
 
-    final String BACKGROUND_MP3 = "src/soundeffects/8bit-music-for-game-68698.mp3";
-    final String GAMEOVER_WAV = "src/soundeffects/mixkit-retro-arcade-game-over-470.wav";
-    final String GUNSHOT_MP3 = "src/soundeffects/mixkit-game-gun-shot-1662.mp3";
-    final String WIN_SOUND_MP3 = "src/soundeffects/level-up-47165.mp3";
+    final String BACKGROUND_MP3 = "soundeffects/8bit-music-for-game-68698.mp3";
+    final String GAMEOVER_WAV = "soundeffects/mixkit-retro-arcade-game-over-470.wav";
+    final String GUNSHOT_MP3 = "soundeffects/mixkit-game-gun-shot-1662.mp3";
+    final String WIN_SOUND_MP3 = "soundeffects/level-up-47165.mp3";
 
 
 
@@ -496,3 +496,4 @@ public class ZombieGameListener extends ZombieAnimListener {
         return keyBits.get(keyCode);
     }
 }
+
